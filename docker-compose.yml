@@ -1,0 +1,49 @@
+services:
+  waha:
+    image: devlikeapro/waha:latest-2025.10.2
+    container_name: waha
+    networks:
+      - wabot-net
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./waha:/app/data
+    environment:
+      - WAHA_TOKEN=e939740cc1504798b5fff14392114ff1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/sessions", "-H", "X-Api-Key: e939740cc1504798b5fff14392114ff1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  bot:
+    build: ./bot
+    container_name: reminder-bot
+    depends_on:
+      waha:
+        condition: service_healthy
+    networks:
+      - wabot-net
+    environment:
+      - NODE_ENV=production
+      - WAHA_URL=http://waha:3000
+      - WAHA_TOKEN=e939740cc1504798b5fff14392114ff1
+      - WAHA_SESSION_NAME=default
+      - BOT_PREFIX=!
+      - BOT_NAME=Schedule Reminder Bot
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./bot/Backend/logs:/app/logs
+      - ./bot/Backend/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  wabot-net:
+    driver: bridge

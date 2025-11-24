@@ -1,0 +1,32 @@
+{
+  "name": "whatsapp-schedule-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot for managing class schedule reminders",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon --legacy-watch src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "schedule",
+    "reminder",
+    "waha"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3",
+    "better-sqlite3": "^9.2.2",
+    "dotenv": "^16.3.1",
+    "moment": "^2.29.4",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
