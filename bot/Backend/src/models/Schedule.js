@@ -45,8 +45,12 @@ class Schedule {
       // Get the created schedule
       const createdSchedule = await Schedule.findById(result.insertId);
 
-      // Create initial reminder (15 minutes before)
-      await Schedule.createReminder(result.insertId, scheduleData.scheduleDateTime);
+      // Create reminder with custom hours if provided
+      await Schedule.createReminder(
+        result.insertId,
+        scheduleData.scheduleDateTime,
+        scheduleData.reminderHours
+      );
 
       return createdSchedule;
     } catch (error) {
@@ -153,10 +157,15 @@ class Schedule {
   }
 
   // Create reminder for a schedule
-  static async createReminder(scheduleId, scheduleDateTime) {
+  static async createReminder(scheduleId, scheduleDateTime, reminderHours = null) {
     try {
-      // Create reminder 15 minutes before the schedule
-      const reminderTime = moment.utc(scheduleDateTime).subtract(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+      // Create reminder based on custom hours or default 15 minutes
+      let reminderTime;
+      if (reminderHours) {
+        reminderTime = moment.utc(scheduleDateTime).subtract(reminderHours, 'hours').format('YYYY-MM-DD HH:mm:ss');
+      } else {
+        reminderTime = moment.utc(scheduleDateTime).subtract(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+      }
 
       const sql = `
         INSERT INTO reminders (schedule_id, reminder_datetime)

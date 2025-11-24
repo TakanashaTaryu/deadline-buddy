@@ -1,0 +1,59 @@
+// Add this method to commandController.js before the closing brace of the class
+
+  async handleSticker(sender, args, mediaInfo) {
+    try {
+      const wahaService = require('../services/wahaService');
+      const mediaProcessor = require('../utils/mediaProcessor');
+
+      let mediaUrl = null;
+      let mimetype = null;
+
+      // Check for direct media (image/video sent with !sticker caption)
+      if (mediaInfo.hasMedia && mediaInfo.mediaUrl) {
+        mediaUrl = mediaInfo.mediaUrl;
+        mimetype = mediaInfo.mimetype;
+        console.log(`📸 Direct media detected: ${mimetype}`);
+      }
+      // Check for quoted/replied media
+      else if (mediaInfo.quotedMsg) {
+        const quoted = mediaInfo.quotedMsg;
+        if (quoted.type === 'image' || quoted.type === 'video') {
+          // WAHA stores media URL in quoted message
+          mediaUrl = quoted.media?.url || null;
+          mimetype = quoted.mimetype || `${quoted.type}/jpeg`;
+          console.log(`📸 Quoted media detected: ${mimetype}`);
+        }
+      }
+
+      // If no media found, return error
+      if (!mediaUrl) {
+        return `❌ *Tidak ada gambar/video yang ditemukan*
+
+Kirim gambar/video dengan caption \`!sticker\` atau reply gambar/video dengan pesan \`!sticker\``;
+      }
+
+      // Download media
+      console.log(`📥 Downloading media for sticker conversion...`);
+      const mediaBuffer = await wahaService.downloadMedia(mediaUrl);
+
+      // Convert to sticker
+      console.log(`🔄 Converting to sticker format...`);
+      const stickerBuffer = await mediaProcessor.mediaToSticker(mediaBuffer, mimetype);
+
+      // Send sticker
+      await wahaService.sendSticker(sender.chatId, stickerBuffer);
+
+      // Return null to avoid sending text message (sticker already sent)
+      return null;
+
+    } catch (error) {
+      console.error('❌ Error in handleSticker:', error);
+      return `❌ *Maaf, terjadi kesalahan saat membuat stiker.*
+
+Pastikan file adalah gambar atau video yang valid.`;
+    }
+  }
+
+
+// Also update the help message in handleCommands() to include:
+// • \`!sticker\` — Buat stiker dari gambar/video (kirim langsung atau reply)

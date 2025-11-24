@@ -20,6 +20,7 @@ Use \`!commands\` to see all the commands provide by this bot
     const helpMessage = `📚 *Daftar Perintah*
 
 • \`!tugas-tambah [nama], [pelajaran], [waktu]\` — Tambah tugas baru
+• \`!tugas-tambah [nama], [pelajaran], [waktu], H-[jam]\` — Tambah tugas dengan custom reminder
 • \`!tugas-hapus [nama]\` — Hapus tugas berdasarkan nama
 • \`!tugas\` — Tampilkan semua tugas
 • \`!timezone-edit (WIB/WITA/WIT)\` — Atur zona waktu grup
@@ -27,6 +28,7 @@ Use \`!commands\` to see all the commands provide by this bot
 
 Format waktu: DD-MM-YYYY HH:mm (${tz})
 Contoh: \`!tugas-tambah PR Matematika, Bab 1, 25-11-2025 10:00\`
+Contoh custom reminder: \`!tugas-tambah PR Fisika, Bab 2, 26-11-2025 08:00, H-12\`
 
 Catatan: Bot bekerja per grup secara terpisah.`
     return helpMessage
@@ -39,20 +41,43 @@ Catatan: Bot bekerja per grup secara terpisah.`
       const input = args.join(' ');
       const parts = input.split(',').map(part => part.trim());
 
-      if (parts.length !== 3) {
+      if (parts.length < 3 || parts.length > 4) {
         return `❌ *Format Salah!*
 
-Gunakan: \`!tugas-tambah [nama], [pelajaran], [waktu]\`
+Gunakan: \`!tugas-tambah [nama], [pelajaran], [waktu]\` atau
+\`!tugas-tambah [nama], [pelajaran], [waktu], H-[jam]\`
 
 *Contoh:*
 \`!tugas-tambah PR Matematika, Bab 1, 25-11-2025 10:00\`
+\`!tugas-tambah PR Matematika, Bab 1, 25-11-2025 10:00, H-12\`
 
 📝 *Catatan:*
 • Gunakan koma untuk memisahkan
-• Format waktu: DD-MM-YYYY HH:mm (24 jam)`;
+• Format waktu: DD-MM-YYYY HH:mm (24 jam)
+• H-[jam] untuk custom reminder (opsional, default 15 menit)`;
       }
 
-      const [taskName, subject, timeStr] = parts;
+      const [taskName, subject, timeStr, reminderStr] = parts;
+
+      // Parse custom reminder time (H-[jam] format)
+      let reminderHours = null;
+      if (reminderStr) {
+        const match = reminderStr.match(/^H-(\d+)$/i);
+        if (!match) {
+          return `❌ *Format Reminder Salah!*
+
+Format reminder harus: \`H-[jam]\`
+*Contoh:* \`H-12\` (12 jam sebelum deadline)
+
+Input kamu: \`${reminderStr}\``;
+        }
+        reminderHours = parseInt(match[1]);
+        if (reminderHours <= 0) {
+          return `❌ *Jam reminder harus lebih dari 0!*
+
+Input kamu: \`H-${reminderHours}\``;
+        }
+      }
 
       const offset = await GroupSettings.getOffset(sender.chatId)
       const tz = await GroupSettings.getTimezone(sender.chatId)
@@ -76,14 +101,7 @@ Waktu input: ${local.format('DD/MM/YYYY HH:mm')} ${tz}
 Waktu sekarang: ${moment.utc().utcOffset(offset).format('DD/MM/YYYY HH:mm')} ${tz}`;
       }
 
-      // Create schedule
-      // Mapping:
-      // scheduleName -> taskName
-      // teacherCode -> subject
-      // room -> "-"
-      // scheduleDateTime -> scheduleDateTime
-      // isWeekly -> false
-
+      // Create schedule with custom reminder hours
       const scheduleData = {
         chatId: sender.chatId,
         userPhone: sender.phone,
@@ -91,10 +109,16 @@ Waktu sekarang: ${moment.utc().utcOffset(offset).format('DD/MM/YYYY HH:mm')} ${t
         teacherCode: subject,
         room: '-',
         scheduleDateTime: scheduleUtc.format('YYYY-MM-DD HH:mm:ss'),
-        isWeekly: false
+        isWeekly: false,
+        reminderHours: reminderHours // Pass custom reminder hours
       };
 
       const newSchedule = await Schedule.create(scheduleData);
+
+      // Build reminder message
+      const reminderText = reminderHours
+        ? `${reminderHours} jam sebelum deadline`
+        : '15 menit sebelum deadline';
 
       const successMessage = `✅ *Tugas Berhasil Ditambahkan!*
 
@@ -102,7 +126,7 @@ Waktu sekarang: ${moment.utc().utcOffset(offset).format('DD/MM/YYYY HH:mm')} ${t
 📖 Pelajaran: ${newSchedule.teacherCode}
 📅 Deadline: ${local.format('DD/MM/YYYY HH:mm')} ${tz}
 
-🔔 Pengingat akan dikirim 15 menit sebelum deadline.`;
+🔔 Pengingat akan dikirim ${reminderText}.`;
 
       return successMessage;
 
@@ -226,7 +250,7 @@ Gunakan: \`!timezone-edit (WIB/WITA/WIT)\``;
 
   async handleTimezoneEdit(sender, args) {
     const input = (args[0] || '').toUpperCase()
-    if (!['WIB','WITA','WIT'].includes(input)) {
+    if (!['WIB', 'WITA', 'WIT'].includes(input)) {
       return `❌ Format salah
 
 Gunakan: \`!timezone-edit (WIB/WITA/WIT)\``

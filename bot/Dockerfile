@@ -4,8 +4,8 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Install build dependencies for better-sqlite3
-RUN apk add --no-cache python3 make g++ curl
+# Install build dependencies for better-sqlite3 and media processing
+RUN apk add --no-cache python3 make g++ curl ffmpeg
 
 # Copy package.json and package-lock.json
 COPY Backend/package*.json ./

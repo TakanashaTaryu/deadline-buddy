@@ -1,0 +1,56 @@
+  async downloadMedia(mediaUrl) {
+    try {
+      console.log(`📥 Downloading media from: ${mediaUrl}`);
+      
+      // Replace localhost with the correct WAHA service URL for Docker networking
+      let downloadUrl = mediaUrl;
+      if (mediaUrl.includes('localhost:3000')) {
+        downloadUrl = mediaUrl.replace('localhost:3000', this.baseURL.replace('http://', ''));
+      } else if (mediaUrl.includes('127.0.0.1:3000')) {
+        downloadUrl = mediaUrl.replace('127.0.0.1:3000', this.baseURL.replace('http://', ''));
+      }
+      
+      console.log(`📥 Adjusted URL: ${downloadUrl}`);
+
+      const response = await axios.get(downloadUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        headers: {
+          'X-Api-Key': this.token
+        }
+      });
+
+      console.log(`✅ Media downloaded successfully (${response.data.length} bytes)`);
+      return Buffer.from(response.data);
+
+    } catch (error) {
+      console.error(`❌ Error downloading media:`, error.message);
+      throw error;
+    }
+  }
+
+  async sendSticker(chatId, stickerBuffer) {
+    try {
+      console.log(`📤 Sending sticker to ${chatId}...`);
+      
+      // Convert buffer to base64
+      const base64Data = stickerBuffer.toString('base64');
+      
+      const response = await this.makeRequest('POST', `/api/sendImage`, {
+        session: this.sessionName,
+        chatId: chatId,
+        file: {
+          mimetype: 'image/webp',
+          filename: 'sticker.webp',
+          data: base64Data
+        }
+      });
+
+      console.log(`✅ Sticker sent to ${chatId}`);
+      return response.data;
+      
+    } catch (error) {
+      console.error(`❌ Error sending sticker to ${chatId}:`, error.message);
+      throw error;
+    }
+  }
