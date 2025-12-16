@@ -41,8 +41,19 @@ Catatan: Bot bekerja per grup secara terpisah.`
       const input = args.join(' ');
       const parts = input.split(',').map(part => part.trim());
 
+      console.log('DEBUG handleTugasTambah:');
+      console.log('Args:', args);
+      console.log('Input:', input);
+      console.log('Parts:', parts);
+      console.log('Parts Length:', parts.length);
+
       if (parts.length < 3 || parts.length > 4) {
         return `❌ *Format Salah!*
+
+DEBUG INFO:
+Input: ${input}
+Parts Length: ${parts.length}
+Parts: ${JSON.stringify(parts)}
 
 Gunakan: \`!tugas-tambah [nama], [pelajaran], [waktu]\` atau
 \`!tugas-tambah [nama], [pelajaran], [waktu], H-[jam]\`

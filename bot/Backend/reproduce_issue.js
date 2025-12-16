@@ -1,4 +1,6 @@
 
+const moment = require('moment'); // Require moment to check date validation too
+
 const messageBody = `!tugas-tambah IoT, Quiz, 22-12-2025 23:59, H-24
 !tugas-tambah SKD, Tugas 11, 17-12-2025 23:59, H-12
 !tugas-tambah SKD, PPT Presentasi, 17-12-2025 23:59, H-12
@@ -25,13 +27,22 @@ lines.forEach((line, index) => {
 
     console.log(`Line ${index + 1}:`);
     console.log(`Original: "${line}"`);
-    console.log(`Parsed Args Joined: "${input}"`);
-    console.log(`Split Parts (${parts.length}):`, parts);
+    console.log(`Args joined: "${input}"`);
+    console.log(`Parts (${parts.length})`);
 
     if (parts.length < 3 || parts.length > 4) {
-        console.error('❌ Format Salah! Length check failed.');
+        console.log('FAIL: Format Salah! Length check failed.');
     } else {
-        console.log('✅ Length check passed.');
+        console.log('PASS: Length check passed.');
+
+        // Check date validity logic from controller
+        const timeStr = parts[2];
+        const local = moment(timeStr, 'DD-MM-YYYY HH:mm', true);
+        if (!local.isValid()) {
+            console.log(`FAIL: Date invalid: "${timeStr}"`);
+        } else {
+            console.log(`PASS: Date valid: "${timeStr}"`);
+        }
     }
-    console.log('------------------------------------------------');
+    console.log('---');
 });
